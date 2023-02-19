@@ -1,4 +1,4 @@
-package com.ttdyce.nhviewer.model.room;
+package com.github.ttdyce.nhviewer.model.room;
 
 import java.io.Serializable;
 

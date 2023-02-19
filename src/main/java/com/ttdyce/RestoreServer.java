@@ -12,6 +12,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.FileSystems;
@@ -26,8 +27,8 @@ import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
-import com.ttdyce.nhviewer.model.room.ComicCachedEntity;
-import com.ttdyce.nhviewer.model.room.ComicCollectionEntity;
+import com.github.ttdyce.nhviewer.model.room.ComicCachedEntity;
+import com.github.ttdyce.nhviewer.model.room.ComicCollectionEntity;
 
 // Server class
 public class RestoreServer {
@@ -45,10 +46,19 @@ public class RestoreServer {
     public static void main(final String[] args) throws IOException {
         // get local lan ip
         String localIp;
+        
+        // tested on windows ok, macos returns 0.0.0.0
         try (final DatagramSocket socket = new DatagramSocket()) {
             socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
             localIp = socket.getLocalAddress().getHostAddress();
         }
+        if (localIp.equals("0.0.0.0"))
+            try (Socket socket = new Socket()) {
+                // tested work on macos
+                socket.connect(new InetSocketAddress("google.com", 80));
+                localIp = socket.getLocalAddress().getHostAddress();
+            }
+
         String port = "3333";
         String jsonText = String.format("{\"action\" : \"restore\", \"ip\": \"%s\", \"port\": \"%s\"}", localIp, port);
 
@@ -117,15 +127,8 @@ class RestoreHandler extends Thread {
     @Override
     public void run() {
 
-        final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HHmm");
-        final Date date = new Date();
-
-        String tableName;
-
-        final String path = ".\\NHServer_backups\\";
-        final String fileName = String.format("NHCollections %s.zip", dateFormat.format(date));
+        final String path = "./NHServer_backups/";
         final File dir = new File(path);
-        final File file = new File(path + fileName);
 
         if (!dir.exists())
             dir.mkdir();
@@ -164,7 +167,6 @@ class RestoreHandler extends Thread {
             s.close();
 
         } catch (IOException | ClassNotFoundException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
